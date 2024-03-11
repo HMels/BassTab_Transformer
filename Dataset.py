@@ -81,20 +81,23 @@ def parse_tab_line(line):
     remaining = remaining.replace(" ","")
     output = output.replace(" ","")
     
+    '''
     # Check for repeat count in remaining characters
     repeat = 1
-    if len(remaining)>0:
-        remaining+="  "
-        for r in remaining:
-            if r == "x":
-                if remaining[remaining.index("x")+2].isdigit():
-                    repeat = int(remaining[remaining.index("x")+1] + remaining[remaining.index("x")+2])
-                elif remaining[remaining.index("x")+1].isdigit():
-                    repeat = int(remaining[remaining.index("x")+1])
-                else: repeat = None
-                break
-                
-    return output, repeat, isempty
+    try:
+        if len(remaining)>0:
+            remaining+="  "
+            for r in remaining:
+                if r == "x":
+                    if remaining[remaining.index("x")+2].isdigit():
+                        repeat = int(remaining[remaining.index("x")+1] + remaining[remaining.index("x")+2])
+                    elif remaining[remaining.index("x")+1].isdigit():
+                        repeat = int(remaining[remaining.index("x")+1])
+                    else: repeat = None
+                    break
+    except: print('Minor error occured in the remainder')
+    '''
+    return output, 1, isempty
 
 
 def load_bassTab(url):
@@ -152,7 +155,7 @@ def load_bassTab(url):
         Afound=False
         Dfound=False
         Gfound=False
-        
+
         for line0 in tab_lines:
             # We are filtering all useless information here, such as text about the tab and more
             # all the ways the program might fail
@@ -160,20 +163,21 @@ def load_bassTab(url):
             for char in line0:
                 if char in number_dict or char in special_dict:
                     line += char
-            line=line.replace(":","")
-            line=line.replace(";","")
-            line=line.replace("G-","G|-")
-            line=line.replace("Gb-","Gb|-")
-            line=line.replace("A-","A|-")
-            line=line.replace("Ab-","Ab|-")
-            line=line.replace("D-","D|-")
-            line=line.replace("Db-","Db|-")
-            line=line.replace("||","|")
             line=line.replace('[/tab]',"")
             line=line.replace("[tab]","")
+            line=line.replace(":","")
+            line=line.replace(";","")
+            line=line.replace("G","G|")
+            line=line.replace("Gb","G|")
+            line=line.replace("A","A|")
+            line=line.replace("Ab","A|")
+            line=line.replace("D","D|")
+            line=line.replace("Db","D|")
             line=line.replace("E-mail","")
-            line=line.replace("E-","E|-")
-            line=line.replace("Eb-","Eb|-")
+            line=line.replace("E","E|")
+            line=line.replace("Eb","E|")
+            line=line.replace("||","|")
+            line=line.replace("||","|")
             if line[-2:]=="-\r":
                 line=line.replace("-\r","-|\r")
             if line[-8:]=='-[/tab]\r':
@@ -189,37 +193,32 @@ def load_bassTab(url):
             line=line.replace("X","x")
             line=line.replace("S","s")
             
+            # some tabs don't have tuning, so we need to add that 
+            if line[:2]=='|-':
+                if not Gfound: line = "G"+line
+                elif not Dfound: line = "D"+line
+                elif not Afound: line = "A"+line
+                elif not Efound: line = "E"+line
+                 
             # check if all lines have been found when starting over again
-            if (line.startswith(("Gb|")) or line.startswith(("G|"))) and Gfound: 
+            if line.startswith("G|") and Gfound: 
                 Gfound=False
                 Dfound=False
                 Afound=False
                 Efound=False
     
             # we only have standard tuning and tuning a half step lower. Drop D is ignored
-            if line.startswith(("Gb|")):
-                G_new, _, Gisempty = parse_tab_line(line[2:])
-                Gfound=True
             elif line.startswith(("G|")):
-                G_new, _, Gisempty = parse_tab_line(line[1:])
+                G_new, _, Gisempty = parse_tab_line(line[0:])
                 Gfound=True
-            elif line.startswith(("Db|")):
-                D_new, _, Disempty = parse_tab_line(line[2:])
-                Dfound=True
             elif line.startswith(("D|")):
-                D_new, _, Disempty = parse_tab_line(line[1:])
+                D_new, _, Disempty = parse_tab_line(line[0:])
                 Dfound=True
-            elif line.startswith(("Ab|")):
-                A_new, _, Aisempty = parse_tab_line(line[2:])
-                Afound=True
             elif line.startswith(("A|")):
-                A_new, _, Aisempty = parse_tab_line(line[1:])
+                A_new, _, Aisempty = parse_tab_line(line[0:])
                 Afound=True
-            elif line.startswith(("Eb|")):
-                E_new, _, Eisempty = parse_tab_line(line[2:])
-                Efound=True
             elif line.startswith(("E|")):
-                E_new, _, Eisempty = parse_tab_line(line[1:])
+                E_new, _, Eisempty = parse_tab_line(line[0:])
                 Efound=True
                 
             # add the basslines only if all strings have been found
@@ -230,15 +229,15 @@ def load_bassTab(url):
                     for i in range(1,min(len(E_new),len(A_new),len(D_new),len(G_new))):
                         bassTab.append(str(G_new[i])+str(D_new[i])+str(A_new[i])+str(E_new[i])) 
                     bassTab.append('<END>')
-                    ##todo maybe add something that encodes special moves within the script. Only of program fails
                 
                 #reset
                 Efound=False
                 Afound=False
                 Dfound=False
                 Gfound=False
-                
+
         if len(bassTab)>1:
+            #print_basstab(bassTab)
             return bassTab
         else: 
             print("Cannot access",url)
@@ -286,8 +285,12 @@ if __name__ == "__main__":
     # Starting url
     ##TODO right now we only have rock
     # filtered on best rating, bass tab, standard tuning and rock
-    url1 = "https://www.ultimate-guitar.com/explore?genres[]=4&order=rating_desc&page="
-    url2 = "&tuning[]=1&type[]=Bass%20Tabs"
+    #url1 = "https://www.ultimate-guitar.com/explore?genres[]=4&order=rating_desc&page="
+    #url2 = "&tuning[]=1&type[]=Bass%20Tabs"
+    
+    # filtered on best rating, bass tab, standard tuning and no genre to hopefully generate better tabs
+    url1 = "https://www.ultimate-guitar.com/explore?order=rating_desc&page="
+    url2 = "&tuning[]=1&type[]=Bass Tabs"
     N = 100 # total number of pages to scrape, 100 is maximum
     Dataset = []
     
@@ -314,9 +317,10 @@ if __name__ == "__main__":
                                 
                 
     #%% save the tokens
-    import pickle
-    
-    # Assuming your tokenized inputs are stored in a list called 'tokenized_inputs'
-    # Save the list using Pickle
-    with open('Dataset.pickle', 'wb') as f:
-        pickle.dump(Dataset, f)
+    if True:
+        import pickle
+        
+        # Assuming your tokenized inputs are stored in a list called 'tokenized_inputs'
+        # Save the list using Pickle
+        with open('Dataset.pickle', 'wb') as f:
+            pickle.dump(Dataset, f)

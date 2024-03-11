@@ -6,8 +6,12 @@ Created on Thu Mar  7 16:42:25 2024
 """
 
 import pickle
-import torch # we use PyTorch: https://pytorch.org
 import matplotlib.pyplot as plt
+import numpy as np
+
+import torch
+import torch.nn as nn
+from torch.nn import functional as F
 
 # Load the list back from the Pickle file
 with open('Dataset.pickle', 'rb') as f:
@@ -37,27 +41,6 @@ val_data = data[n:]
 
 
 #%% 
-##TODO hyperopt 
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-
-# hyperparameters
-batch_size = 16 
-block_size = 32
-max_iters = 2000
-eval_interval = 100
-learning_rate = 1e-3
-device = 'cuda' if torch.cuda.is_available() else 'cpu'  # not available on Intal and AMD
-eval_iters = 200
-n_embd = 128
-n_head = 4
-n_layer = 4
-dropout = 0.0 # temporarily drop out certain connections in order to decrease overfitting
-# ------------
-
-torch.manual_seed(1337)
-
 # data loading
 def get_batch(split):
     '''
@@ -73,7 +56,7 @@ def get_batch(split):
     x : [batch x block] Tensor
         The context of the attention.
     y : [batch x block] Tensor
-        The target for the attention.
+        The target for the attention. Block is the maximum attention length
 
     '''
     data = train_data if split == 'train' else val_data
@@ -127,18 +110,23 @@ class Head(nn.Module):
         B,T,C = x.shape
         k = self.key(x)
         q = self.query(x)
+        
         # compute attention scores ("affinities")
         wei = q @ k.transpose(-2,-1) * C**-0.5 # (B, T, C) @ (B, C, T) -> (B, T, T)
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # (B, T, T)
         wei = F.softmax(wei, dim=-1) # (B, T, T)
         wei = self.dropout(wei)
+        
         # perform the weighted aggregation of the values
         v = self.value(x) # (B,T,C)
         out = wei @ v # (B, T, T) @ (B, T, C) -> (B, T, C)
         return out
 
+
 class MultiHeadAttention(nn.Module):
-    """ multiple heads of self-attention in parallel """
+    """
+    
+    """
 
     def __init__(self, num_heads, head_size):
         super().__init__()
@@ -237,6 +225,25 @@ class BigramLanguageModel(nn.Module):
 
 if __name__ == "__main__":
     ##TODO make a main file and a train file
+    ##TODO hyperopt 
+    ##TODO MLFlow?
+    
+    # hyperparameters
+    batch_size = 16 
+    block_size = 32
+    max_iters = 2000
+    eval_interval = 100 
+    learning_rate = 1e-3
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'  # not available on Intal and AMD
+    eval_iters = 200 # how many iterations the loss is going to be estimated on
+    n_embd = 128
+    n_head = 4
+    n_layer = 4
+    dropout = 0.0 # temporarily drop out certain connections in order to decrease overfitting
+    # ------------
+    
+    torch.manual_seed(1337)
+    
     
     model = BigramLanguageModel()
     m = model.to(device)
@@ -246,11 +253,13 @@ if __name__ == "__main__":
     # create a PyTorch optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     
-    
+    loss_list = np.empty((max_iters//eval_interval,2))
     for iter in range(max_iters):
         # every once in a while evaluate the loss on train and val sets
         if iter % eval_interval == 0 or iter == max_iters - 1:
             losses = estimate_loss()
+            loss_list[iter//eval_interval,0]=losses['train']
+            loss_list[iter//eval_interval,1]=losses['val']
             print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
     
         # sample a batch of data
@@ -263,11 +272,18 @@ if __name__ == "__main__":
         optimizer.step()
         ##TODO add plot of loss values
 
-
-
+    fig, ax = plt.subplots()
+    ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:,0], label="Training Loss")
+    ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:,1], label="Validation Loss")
+    fig.legend()
+    ax.set_yscale('log')
+    fig.savefig("loss_value")
+    
+    
     #%%
     from Dataset import print_basstab
     
-    context = torch.reshape(torch.LongTensor(encode(["GDAE", "||||"])), shape=(2,1))
-    print_basstab(decode(m.generate(idx = context, max_new_tokens=200)[0].tolist()))
+    #context = torch.zeros((1, 1), dtype=torch.long, device=device)
+    context = torch.reshape(torch.LongTensor(encode(["GDAE","||||"])), shape=(2,1))
+    print_basstab(decode(m.generate(idx = context, max_new_tokens=100)[0].tolist()))
 
