@@ -16,6 +16,7 @@ if __name__ ==  "__main__":
     #    Dataset = pickle.load(f)
         
     model = load_model()
+    model.eval()
     dictionary = load_dict()
     
     
@@ -24,8 +25,8 @@ if __name__ ==  "__main__":
     from Dataset import print_basstab
     
     #context = torch.zeros((1, 1), dtype=torch.long, device=device)
-    context = ["GDAE","||||","---2","--5-","----","----","----"]
+    context = ["GDAE","||||","----"]
     context = torch.reshape(torch.LongTensor(dictionary.encode(context)), shape=(len(context),1))
-    print_basstab(dictionary.decode(model.generate(idx = context, max_new_tokens=100)[0].tolist()))
-
-
+    
+    for _ in range(5):
+        print_basstab(dictionary.decode(model.generate(idx = context, max_new_tokens=100)[0].tolist()))

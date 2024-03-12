@@ -14,7 +14,7 @@ class Head(nn.Module):
     Simple verion of the Attention mechanism as described in the Attention is all you need paper"
     Can be added together for the Multi-Headed Attention mechanism. 
     """
-    def __init__(self, n_embd=64, head_size=4, block_size=32, dropout=0):
+    def __init__(self, n_embd, head_size, block_size, dropout):
         super().__init__()
         self.key = nn.Linear(n_embd, head_size, bias=False)
         self.query = nn.Linear(n_embd, head_size, bias=False)
@@ -46,7 +46,7 @@ class MultiHeadAttention(nn.Module):
     Adds together multiple Heads to form the multi head attention 
     """
 
-    def __init__(self, n_heads=4, n_embd=64, head_size=4, block_size=32, dropout=0):
+    def __init__(self, n_heads, n_embd, head_size, block_size, dropout):
         super().__init__()
         self.heads = nn.ModuleList([Head(n_embd=n_embd, head_size=head_size, 
                                          block_size=block_size, dropout=dropout) for _ in range(n_heads)])
@@ -63,7 +63,7 @@ class MultiHeadAttention(nn.Module):
 class FeedFoward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
 
-    def __init__(self, n_embd, dropout=0.):
+    def __init__(self, n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),

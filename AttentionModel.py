@@ -4,7 +4,6 @@ Created on Tue Mar 12 13:19:30 2024
 
 @author: Mels
 """
-import pickle
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -29,12 +28,12 @@ class Block(nn.Module):
     added such that the gradient can be calculated backwards, making training easier.    
     """
 
-    def __init__(self, n_heads=4, n_embd=64, block_size=32, dropout=0):
+    def __init__(self, n_heads, n_embd, block_size, dropout):
         # n_embd: embedding dimension, n_heads: the number of heads we'd like
         super().__init__()
         head_size = n_embd // n_heads
-        self.sa = MultiHeadAttention(n_embd=n_embd, head_size=head_size, block_size=block_size, dropout=dropout)
-        self.ffwd = FeedFoward(n_embd)
+        self.sa = MultiHeadAttention(n_heads=n_heads, n_embd=n_embd, head_size=head_size, block_size=block_size, dropout=dropout)
+        self.ffwd = FeedFoward(n_embd, dropout)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)
 
@@ -60,7 +59,7 @@ class AttentionModel(nn.Module):
         - linear layer
     """
     
-    def __init__(self, vocab_size, n_layer=4, n_heads=4, n_embd=64, block_size=32, dropout=0):
+    def __init__(self, vocab_size, n_layer, n_heads, n_embd, block_size, dropout):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)

@@ -14,9 +14,10 @@ import torch
 from Dictionary import Dictionary, save_dict
 from AttentionModel import AttentionModel, save_model
 
+##TODO write headers
 
 #%% fuctions
-def get_batch(split, block_size, batch_size, device='cpu'):
+def get_batch(split, block_size, batch_size, train_data, val_data, device='cpu'):
     '''
     Generate a small batch of data of inputs x and targets y 
     
@@ -48,7 +49,7 @@ def get_batch(split, block_size, batch_size, device='cpu'):
 
 
 @torch.no_grad()
-def estimate_loss(model, eval_iters, block_size, batch_size):
+def estimate_loss(model, eval_iters, block_size, batch_size, train_data, val_data,):
     '''
     Estimates the loss for both the training and validation data. This is not the actual loss used in
     the model, but just an estimation.
@@ -71,7 +72,7 @@ def estimate_loss(model, eval_iters, block_size, batch_size):
     for split in ['train', 'val']:
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
-            X, Y = get_batch(split, block_size, batch_size, device='cpu')
+            X, Y = get_batch(split, block_size, batch_size, train_data, val_data, device='cpu')
             logits, loss = model(X, Y)
             losses[k] = loss.item()
         out[split] = losses.mean()
@@ -79,8 +80,8 @@ def estimate_loss(model, eval_iters, block_size, batch_size):
     return out
 
 
-def train_model(batch_size = 16, block_size = 32, max_iters = 2000, eval_interval = 100, learning_rate = 1e-3,
-          eval_iters = 200, n_embd = 128, n_heads = 4,n_layer = 4, dropout = 0.0):
+def train_model(train_data, val_data, vocab_size, batch_size = 16, block_size = 32, max_iters = 1000, eval_interval = 100, learning_rate = 1e-3,
+          eval_iters = 200, n_embd = 128, n_heads = 4,n_layer = 4, dropout = 0.0, show_fig=True):
     '''
     train the model
 
@@ -106,11 +107,14 @@ def train_model(batch_size = 16, block_size = 32, max_iters = 2000, eval_interva
         DESCRIPTION. The default is 4.
     dropout : float, optional
         temporarily drop out certain connections in order to decrease overfitting. The default is 0.0.
+    show_fig : bool, optional
+        True if you want to show the figure with the loss values. The default is True.
 
     Returns
     -------
-    None.
-
+    model : The trained model.
+    losses : Both the estimated losses of the training and evaluation dataset.
+        
     '''
     ##TODO hyperopt 
     ##TODO MLFlow?
@@ -119,7 +123,7 @@ def train_model(batch_size = 16, block_size = 32, max_iters = 2000, eval_interva
     torch.manual_seed(1337) 
     
     
-    m = AttentionModel(vocab_size=dictionary.vocab_size, n_layer=n_layer, n_heads=n_heads,
+    m = AttentionModel(vocab_size=vocab_size, n_layer=n_layer, n_heads=n_heads,
                            n_embd=n_embd, block_size=block_size, dropout=dropout)
     model = m.to(device)
     # print the number of parameters in the model
@@ -132,13 +136,13 @@ def train_model(batch_size = 16, block_size = 32, max_iters = 2000, eval_interva
     for iter in range(max_iters):
         # every once in a while evaluate the loss on train and val sets
         if iter % eval_interval == 0 or iter == max_iters - 1:
-            losses = estimate_loss(model, eval_iters, block_size, batch_size, )
+            losses = estimate_loss(model, eval_iters, block_size, batch_size, train_data, val_data)
             loss_list[iter//eval_interval,0]=losses['train']
             loss_list[iter//eval_interval,1]=losses['val']
             print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
     
         # sample a batch of data
-        xb, yb = get_batch('train', block_size, batch_size, device='cpu')
+        xb, yb = get_batch('train', block_size, batch_size, train_data, val_data, device='cpu')
     
         # evaluate the loss
         logits, loss = model(xb, yb)
@@ -146,14 +150,15 @@ def train_model(batch_size = 16, block_size = 32, max_iters = 2000, eval_interva
         loss.backward()
         optimizer.step()
 
-    fig, ax = plt.subplots()
-    ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:,0], label="Training Loss")
-    ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:,1], label="Validation Loss")
-    fig.legend()
-    ax.set_yscale('log')
-    fig.savefig("loss_value")
+    if show_fig:
+        fig, ax = plt.subplots()
+        ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:,0], label="Training Loss")
+        ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:,1], label="Validation Loss")
+        fig.legend()
+        ax.set_yscale('log')
+        fig.savefig("loss_value")
     
-    return m
+    return model, losses
 
 
 #%% load the data in the dictionary
@@ -178,7 +183,7 @@ if __name__ == "__main__":
     save_dict(dictionary)
     
     # train model
-    model = train_model()
+    model,_ = train_model(train_data, val_data, dictionary.vocab_size)
     save_model(model)
     
     
