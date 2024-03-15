@@ -60,7 +60,7 @@ This model is a simplified version of the BassTabAI model. In this version, we w
 
 ## Training the Model
 
-When training the model with the optimized hyperparameters of:
+When training the model with the optimized hyperparameters:
 
 ```json
 {
@@ -75,11 +75,12 @@ When training the model with the optimized hyperparameters of:
     "n_heads": 7,
     "n_layer": 4
 }
-'''
+} 
 
 we can see the next loss curve for both training and validation:
-
 Loss Curve
+
+![Loss Curve](loss_value.png)
 
 An example of what the code returns now:
 
