@@ -75,7 +75,7 @@ When training the model with the optimized hyperparameters:
     "n_heads": 7,
     "n_layer": 4
 }
-} 
+```
 
 we can see the next loss curve for both training and validation:
 Loss Curve
