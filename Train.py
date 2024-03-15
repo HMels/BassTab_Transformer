@@ -81,7 +81,7 @@ def estimate_loss(model, eval_iters, block_size, batch_size, train_data, val_dat
 
 
 def train_model(train_data, val_data, vocab_size, batch_size = 16, block_size = 32, max_iters = 1000, eval_interval = 100, learning_rate = 1e-3,
-          eval_iters = 200, n_embd = 128, n_heads = 4,n_layer = 4, dropout = 0.0, show_fig=True):
+          eval_iters = 200, n_embd = 128, n_heads = 4,n_layer = 4, dropout = 0.5, show_fig=True):
     '''
     train the model
 
@@ -116,18 +116,20 @@ def train_model(train_data, val_data, vocab_size, batch_size = 16, block_size = 
     losses : Both the estimated losses of the training and evaluation dataset.
         
     '''
-    ##TODO hyperopt 
     ##TODO MLFlow?
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # not available on Intel and AMD
     torch.manual_seed(1337) 
+    print("\n------------\nTraining for: \n{batch_size:",batch_size,"\nblock_size:",block_size,"\ndropout:",
+          dropout,"\neval_interval:",eval_interval,"\nlearning_rate:",learning_rate,
+          "\nmax_iters:",max_iters,"\nn_embd:",n_embd,"\nn_heads:",n_heads,"\nn_layer:",n_layer,"}\n------------\n")
     
     
     m = AttentionModel(vocab_size=vocab_size, n_layer=n_layer, n_heads=n_heads,
                            n_embd=n_embd, block_size=block_size, dropout=dropout)
     model = m.to(device)
     # print the number of parameters in the model
-    print(sum(p.numel() for p in model.parameters())/1e6, ' milion parameters')
+    print("Model contains",sum(p.numel() for p in model.parameters())/1e6,'milion parameters\n')
     
     # create a PyTorch optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
@@ -173,7 +175,7 @@ if __name__ == "__main__":
     data = torch.tensor(dictionary.encode(Dataset), dtype=torch.long)
     
     print('vocab_size equals',dictionary.vocab_size)
-    print("The data is encoded in", data.shape, ",",data.dtype)
+    print("The data is encoded in a", data.shape.item(), " size array of type",data.dtype)
     
     n = int(0.9*len(data)) # first 90% will be train, rest val
     train_data = data[:n]
@@ -182,8 +184,12 @@ if __name__ == "__main__":
     # save dictionary 
     save_dict(dictionary)
     
+    # best params
+    with open('best_hyperparameters.pickle', 'rb') as f:
+        best_params = pickle.load(f)
+    
     # train model
-    model,_ = train_model(train_data, val_data, dictionary.vocab_size)
+    model,_ = train_model(train_data, val_data, dictionary.vocab_size, **best_params)
     save_model(model)
     
     
