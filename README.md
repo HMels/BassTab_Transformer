@@ -75,14 +75,13 @@ When training the model with the optimized hyperparameters of:
     "n_heads": 7,
     "n_layer": 4
 }
+'''
 
 we can see the next loss curve for both training and validation:
 
 Loss Curve
 
 An example of what the code returns now:
-
-python
 
 runcell(5, 'C:/Users/Mels/Documents/GitHub/BassTab_Transformer/Model.py')
 G|---4-4-4-4-4-4-4---4------------|-----6--------------------------------------------
