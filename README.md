@@ -9,10 +9,10 @@ This model is a simplified version of the BassTabAI model. In this version, we w
 1.2 The model than tries to recognise the actual tabs from text that surrounds it. It does so by focussing on the first item per line, which should be G, D, A or E.
 1.3 Then, the data is split into tokens, which are just the notes that are played per beat. For example:
 
-G|---9h11
-D||-------
-A|-7-----
-E||------- 
+G|---9h11\n
+D|-------\n
+A|-7-----\n
+E|------- \n
 
 Is split into 
 ('GDAE','||||','----','--7-','----','9---','h---','1---','1---')
