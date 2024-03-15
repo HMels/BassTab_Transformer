@@ -5,11 +5,8 @@ This model is a simplified version of the BassTabAI model. In this version, we w
 ## The Architecture
 
 1. Dataset
-
 1.1 Dataset starts with webscraping all the data. It then makes sure everything is in the right format, such as pull-offs and hammer-ons being denoted by both the lowercase p and h. It then continues to make sure all tabs start in the same way, and it splits the bars. 
-
 1.2 The model than tries to recognise the actual tabs from text that surrounds it. It does so by focussing on the first item per line, which should be G, D, A or E.
-
 1.3 Then, the data is split into tokens, which are just the notes that are played per beat. For example:
 
 G|---9h11  
@@ -24,13 +21,9 @@ Initially I thought it would be better to split the data per actual note (so 9 w
 1.4 The file also contains the print_basstab function, which takes a list of tokens and then prints them as a tab (the inverse of the previous example).
 
 2. Train is used to train the model on the dataset, which has been saved as Dataset.pickle.
-
 2.1 Dictionary is generated which contains both the encoder and decoder for the data.
-
 2.2 Data is split into training and validation, as well as different batches
-
 2.3 estimate_loss function is used to estimate the loss as an output during training
-
 
 4. In Attentionmodel contains the actual model architecture. This one is split into different blocks that are inspired by the gpt framework:
 	3.1 One block contains:
@@ -66,23 +59,14 @@ Initially I thought it would be better to split the data per actual note (so 9 w
 
 When training the model with the optimized hyperparameters of:
 {'batch_size': 48,
-
  'block_size': 52,
- 
  'dropout': 0.09853040756166137,
- 
  'eval_interval': 1000,
- 
  'eval_iters': 200,
- 
  'learning_rate': 0.007617883451530519,
- 
  'max_iters': 1000,
- 
  'n_embd': 85,
- 
  'n_heads': 7,
- 
  'n_layer': 4}
 
 we can see the next loss curve for both training and validation:
