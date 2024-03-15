@@ -58,8 +58,8 @@ def estimate_loss(model, eval_iters, block_size, batch_size, train_data, val_dat
     ----------
     model : TYPE
         DESCRIPTION.
-    eval_iters : TYPE
-        DESCRIPTION.
+    eval_iters : int
+        How many batches we want to calculate the loss over.
 
     Returns
     -------
@@ -83,38 +83,45 @@ def estimate_loss(model, eval_iters, block_size, batch_size, train_data, val_dat
 def train_model(train_data, val_data, vocab_size, batch_size = 16, block_size = 32, max_iters = 1000, eval_interval = 100, learning_rate = 1e-3,
           eval_iters = 200, n_embd = 128, n_heads = 4,n_layer = 4, dropout = 0.5, show_fig=True):
     '''
-    train the model
+    Trains the model on the given data.
 
     Parameters
     ----------
+    train_data : torch.Tensor
+        The training dataset.
+    val_data : torch.Tensor
+        The validation dataset.
+    vocab_size : int
+        The size of the vocabulary.
     batch_size : int, optional
-        DESCRIPTION. The default is 16.
+        The number of samples in each batch. Default is 16.
     block_size : int, optional
-        DESCRIPTION. The default is 32.
+        The size of each block. Default is 32.
     max_iters : int, optional
-        DESCRIPTION. The default is 2000.
+        The maximum number of iterations for training. Default is 1000.
     eval_interval : int, optional
-        DESCRIPTION. The default is 100.
+        The interval at which to evaluate the model. Default is 100.
     learning_rate : float, optional
-        DESCRIPTION. The default is 1e-3.
+        The learning rate for the optimizer. Default is 1e-3.
     eval_iters : int, optional
-        how many iterations the loss is going to be estimated on. The default is 200.
+        The number of iterations for estimating losses. Default is 200.
     n_embd : int, optional
-        DESCRIPTION. The default is 128.
+        The embedding size. Default is 128.
     n_heads : int, optional
-        DESCRIPTION. The default is 4.
+        The number of attention heads. Default is 4.
     n_layer : int, optional
-        DESCRIPTION. The default is 4.
+        The number of layers in the model. Default is 4.
     dropout : float, optional
-        temporarily drop out certain connections in order to decrease overfitting. The default is 0.0.
+        The dropout probability. Default is 0.5.
     show_fig : bool, optional
-        True if you want to show the figure with the loss values. The default is True.
+        Whether to display the loss figure. Default is True.
 
     Returns
     -------
-    model : The trained model.
-    losses : Both the estimated losses of the training and evaluation dataset.
-        
+    model : nn.Module
+        The trained model.
+    losses : dict
+        A dictionary containing both the estimated losses of the training and evaluation datasets.
     '''
     ##TODO MLFlow?
     
@@ -175,7 +182,7 @@ if __name__ == "__main__":
     data = torch.tensor(dictionary.encode(Dataset), dtype=torch.long)
     
     print('vocab_size equals',dictionary.vocab_size)
-    print("The data is encoded in a", data.shape.item(), " size array of type",data.dtype)
+    print("The data is encoded in a", data.shape[0], " size array of type",data.dtype)
     
     n = int(0.9*len(data)) # first 90% will be train, rest val
     train_data = data[:n]
