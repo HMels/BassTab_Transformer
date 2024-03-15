@@ -2,7 +2,7 @@
 
 This model is a simplified version of the BassTabAI model. In this version, we will use a deepened understanding of Neural Networks to create a NLP that focusses more on the Attention Mechanism (in this case Self-Attention). 
 
-##The Architecture
+## The Architecture
 
 1. Dataset
 1.1 Dataset starts with webscraping all the data. It then makes sure everything is in the right format, such as pull-offs and hammer-ons being denoted by both the lowercase p and h. It then continues to make sure all tabs start in the same way, and it splits the bars. 
@@ -10,8 +10,11 @@ This model is a simplified version of the BassTabAI model. In this version, we w
 1.3 Then, the data is split into tokens, which are just the notes that are played per beat. For example:
 
 G|---9h11
+
 D|-------
+
 A|-7-----
+
 E|-------
 
 Is split into 
@@ -65,6 +68,7 @@ we can see the next loss curve for both training and validation:
  
 
 An example of what the code returns now:
+
 runcell(5, 'C:/Users/Mels/Documents/GitHub/BassTab_Transformer/Model.py')
 G|---4-4-4-4-4-4-4---4------------|-----6--------------------------------------------
 D|-----------------4----2--2------|---4-------4-------------------1------0-----------
@@ -72,7 +76,7 @@ A|-2----------------------------2-|-4-----4-----------------2--------12-2--5--10
 E|--------------------------------|---------------2--7--9-|-3-5---1-0---0--70-------|
 
 
-##Things To Do 
+## Things To Do 
 - Implement MLFlow better
 - Make the model more complex to generate better tabs
 - Make the model faster by implementing C++
