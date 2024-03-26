@@ -93,6 +93,7 @@ E|--------------------------------|---------------2--7--9-|-3-5---1-0---0--70---
 Things To Do
 
     Implement MLFlow better
+    Clean up files. Add pngs to new map, add datasets somewhere else
     Make the model more complex to generate better tabs
     Make the model faster by implementing C++
     Improve Positional Encoding according to https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/
