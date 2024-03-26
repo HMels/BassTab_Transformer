@@ -99,3 +99,62 @@ Things To Do
     Improve Positional Encoding according to https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/
     Use context managers
     Implement functions that check the input and output. Greatly shorten the docstrings
+
+Positional Encoding Example:
+
+```
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, n_embd, block_size):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=0.1)
+
+        pe = torch.zeros(block_size, n_embd)
+        position = torch.arange(0, block_size, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, n_embd, 2).float() * (-math.log(10000.0) / n_embd))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        x = x + self.pe[:, :x.size(1)]
+        return self.dropout(x)
+
+class Block(nn.Module):
+    # Your Block implementation goes here
+
+class AttentionModel(nn.Module):
+    def __init__(self, vocab_size, n_layer, n_heads, n_embd, block_size, dropout):
+        super().__init__()
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(n_heads=n_heads, n_embd=n_embd, 
+                                            block_size=block_size, dropout=dropout) for _ in range(n_layer)])
+        self.ln_f = nn.LayerNorm(n_embd)
+        self.lm_head = nn.Linear(n_embd, vocab_size)
+        
+        self.position_encoder = PositionalEncoding(n_embd, block_size)
+
+    def forward(self, idx, targets=None):
+        B, T = idx.shape
+
+        tok_emb = self.token_embedding_table(idx)
+        x = self.position_encoder(tok_emb)
+        x = self.blocks(x)
+        x = self.ln_f(x)
+        logits = self.lm_head(x)
+
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
+
+```
