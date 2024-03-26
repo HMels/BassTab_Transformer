@@ -95,3 +95,6 @@ Things To Do
     Implement MLFlow better
     Make the model more complex to generate better tabs
     Make the model faster by implementing C++
+    Improve Positional Encoding according to https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/
+    Use context managers
+    Implement functions that check the input and output. Greatly shorten the docstrings
