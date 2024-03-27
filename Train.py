@@ -176,9 +176,7 @@ if __name__ == "__main__":
     params['n_embd'] = int(params['n_embd'])
     params['n_heads'] = int(params['n_heads'])
     params['n_layer'] = int(params['n_layer'])
-        
-    ## TODO implement early stopping
-    
+            
     # Load the list back from the Pickle file
     with open('Dataset/Dataset.pickle', 'rb') as f:
         Dataset = pickle.load(f)
