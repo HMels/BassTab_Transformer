@@ -8,6 +8,7 @@ Created on Thu Mar  7 16:42:25 2024
 import pickle
 import matplotlib.pyplot as plt
 import numpy as np
+import mlflow
 
 import torch
 import torch.nn as nn
@@ -25,7 +26,7 @@ def get_batch(split: str, block_size: int, batch_size: int, train_data, val_data
     Parameters
     ----------
     split : 'train' or 'val'
-    block_size : Number of blocks in the model.
+    block_size : The context size
     batch_size
     train_data & val_data
     device : {'cpu', 'gpu'}, optional
@@ -157,6 +158,25 @@ def train_model(train_data, val_data, vocab_size: int, batch_size: int = 16, blo
 #%% load the data in the dictionary
 if __name__ == "__main__":
         
+    fixed_params = {
+        'eval_interval': 500,
+        'max_iters': 500,
+        'eval_iters': 200,
+        'patience': 5
+    }
+        
+    # best params
+    with open('Results/best_hyperparameters.pickle', 'rb') as f:
+        params = pickle.load(f)
+        params.update(fixed_params)
+        
+    # Convert integer choices to integers
+    params['batch_size'] = int(params['batch_size'])
+    params['block_size'] = int(params['block_size'])
+    params['n_embd'] = int(params['n_embd'])
+    params['n_heads'] = int(params['n_heads'])
+    params['n_layer'] = int(params['n_layer'])
+        
     ## TODO implement early stopping
     
     # Load the list back from the Pickle file
@@ -177,14 +197,25 @@ if __name__ == "__main__":
     # save dictionary 
     save_dict(dictionary)
     
-    # best params
-    with open('Results/best_hyperparameters.pickle', 'rb') as f:
-        best_params = pickle.load(f)
+    # initialise MLFlow
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("Default")
     
     # train model
-    model,_ = train_model(train_data, val_data, dictionary.vocab_size, **best_params)
+    model,losses = train_model(train_data, val_data, dictionary.vocab_size, **params)
+    val_loss = losses['val'].item() if isinstance(losses['val'], torch.Tensor) else losses['val']
     save_model(model)
     
+    np.save("temp/train_data.npy", train_data.numpy())
+    np.save("temp/val_data.npy", val_data.numpy())
+    with mlflow.start_run(): # Log hyperparameters and evaluation results
+        mlflow.log_params(params)
+        mlflow.log_artifact("temp/train_data.npy", artifact_path="data")
+        mlflow.log_artifact("temp/val_data.npy", artifact_path="data")
+        mlflow.pytorch.log_model(model, 'Trained Model')
+        mlflow.log_artifact('Dataset/Dataset.pickle')
+        mlflow.log_metric("val_loss", val_loss)
+        mlflow.set_tag("model_name","Trained Model")
     
     
     #%% test it 
