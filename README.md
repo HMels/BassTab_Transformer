@@ -2,6 +2,29 @@
 
 This model is a simplified version of the BassTabAI model. In this version, we will use a deepened understanding of Neural Networks to create a NLP that focuses more on the Attention Mechanism (in this case Self-Attention).
 
+## Dependencies
+```
+pip install Flask==2.1.0
+pip install mlflow
+pip install hyperopt
+pip install torch
+pip install pickle
+pip install functools
+```
+## MLFlow
+```
+pip install mlflow
+pip install Flask==2.1.0
+python -m mlflow ui --backend-store-uri sqlite:///mlflow.db
+....
+-> INFO:waitress:Serving on http://127.0.0.1:5000
+```
+Or other versions. This means we can find our local server on:
+```
+http://127.0.0.1:5000
+```
+
+
 ## The Architecture
 
 1. **Dataset**
@@ -80,7 +103,7 @@ When training the model with the optimized hyperparameters:
 we can see the next loss curve for both training and validation:
 Loss Curve
 
-![Loss Curve](loss_value.png)
+![Loss Curve](Results/loss_value.png)
 
 An example of what the code returns now:
 

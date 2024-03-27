@@ -11,10 +11,10 @@ from torch.nn import functional as F
 from layers import MultiHeadAttention, FeedFoward
 
 def save_model(model):
-    torch.save(model, 'Model')
+    torch.save(model, 'Results/Model')
 
 def load_model():
-    model = torch.load('Model')
+    model = torch.load('Results/Model')
     model.eval()
     return model  
 
@@ -59,7 +59,7 @@ class AttentionModel(nn.Module):
         - linear layer
     """
     
-    def __init__(self, vocab_size, n_layer, n_heads, n_embd, block_size, dropout):
+    def __init__(self, vocab_size : int, n_layer : int, n_heads : int, n_embd : int, block_size : int, dropout : float):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)

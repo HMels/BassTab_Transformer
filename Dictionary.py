@@ -34,10 +34,10 @@ class Dictionary():
         
         
 def save_dict(dictionary):
-    with open(f'Dictionary.pickle', 'wb') as file:
+    with open(f'Dataset/Dictionary.pickle', 'wb') as file:
         pickle.dump(dictionary, file, -1) 
 
 def load_dict():
-    with open(f'Dictionary.pickle', 'rb') as file:
+    with open(f'Dataset/Dictionary.pickle', 'rb') as file:
         dictionary = pickle.load(file)
     return dictionary   

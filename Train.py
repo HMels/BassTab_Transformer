@@ -10,36 +10,33 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import torch
-     
+import torch.nn as nn
+
 from Dictionary import Dictionary, save_dict
 from AttentionModel import AttentionModel, save_model
 
 ##TODO write headers
 
 #%% fuctions
-def get_batch(split, block_size, batch_size, train_data, val_data, device='cpu'):
+def get_batch(split: str, block_size: int, batch_size: int, train_data, val_data, device: str = 'cpu') -> (torch.Tensor, torch.Tensor):
     '''
-    Generate a small batch of data of inputs x and targets y 
-    
+    Generate input-contexts (x) and targets (y) batch.
+
     Parameters
     ----------
-    split : string
-        Either train or val.
-    block_size : TYPE
-        DESCRIPTION.
-    batch_size : TYPE
-        DESCRIPTION.
-    device : TYPE, optional
-        DESCRIPTION. The default is 'cpu'.
+    split : 'train' or 'val'
+    block_size : Number of blocks in the model.
+    batch_size
+    train_data & val_data
+    device : {'cpu', 'gpu'}, optional
+        Device to use. Default is 'cpu'.
     
     Returns
     -------
-    x : [batch x block] Tensor
-        The context of the attention.
-    y : [batch x block] Tensor
-        The target for the attention. Block is the maximum attention length
-
+    x : torch.Tensor [batch x block]. Context for attention.
+    y : torch.Tensor [batch x block]. Target for attention.
     '''
+    
     data = train_data if split == 'train' else val_data
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([data[i:i+block_size] for i in ix])
@@ -49,24 +46,23 @@ def get_batch(split, block_size, batch_size, train_data, val_data, device='cpu')
 
 
 @torch.no_grad()
-def estimate_loss(model, eval_iters, block_size, batch_size, train_data, val_data,):
+def estimate_loss(model, eval_iters: int, block_size: int, batch_size: int, train_data, val_data) -> list:
     '''
-    Estimates the loss for both the training and validation data. This is not the actual loss used in
-    the model, but just an estimation.
+    Estimates loss for training and validation data.
 
     Parameters
     ----------
-    model : TYPE
-        DESCRIPTION.
-    eval_iters : int
-        How many batches we want to calculate the loss over.
+    model : torch model
+    eval_iters : Number of batches to calculate loss over.
+    block_size : Number of blocks in the model.
+    batch_size :
+    train_data & val_data
 
     Returns
     -------
-    out : list
-        List containing floats of the training loss and the validation loss.
-        
+    out : List containing training and validation loss.
     '''
+    
     out = {}
     model.eval()
     for split in ['train', 'val']:
@@ -80,80 +76,68 @@ def estimate_loss(model, eval_iters, block_size, batch_size, train_data, val_dat
     return out
 
 
-def train_model(train_data, val_data, vocab_size, batch_size = 16, block_size = 32, max_iters = 1000, eval_interval = 100, learning_rate = 1e-3,
-          eval_iters = 200, n_embd = 128, n_heads = 4,n_layer = 4, dropout = 0.5, show_fig=True):
+def train_model(train_data, val_data, vocab_size: int, batch_size: int = 16, block_size: int = 32, max_iters: int = 1000, 
+                eval_interval: int = 100, learning_rate: float = 1e-3, eval_iters: int = 200, n_embd: int = 128, 
+                n_heads: int = 4, n_layer: int = 4, dropout: float = 0.5, show_fig: bool = True,
+                patience: int = 5) -> tuple[nn.Module, dict[str, list]]:
     '''
-    Trains the model on the given data.
+    Trains the model on the given data with early stopping.
 
     Parameters
     ----------
-    train_data : torch.Tensor
-        The training dataset.
-    val_data : torch.Tensor
-        The validation dataset.
-    vocab_size : int
-        The size of the vocabulary.
-    batch_size : int, optional
-        The number of samples in each batch. Default is 16.
-    block_size : int, optional
-        The size of each block. Default is 32.
-    max_iters : int, optional
-        The maximum number of iterations for training. Default is 1000.
-    eval_interval : int, optional
-        The interval at which to evaluate the model. Default is 100.
-    learning_rate : float, optional
-        The learning rate for the optimizer. Default is 1e-3.
-    eval_iters : int, optional
-        The number of iterations for estimating losses. Default is 200.
-    n_embd : int, optional
-        The embedding size. Default is 128.
-    n_heads : int, optional
-        The number of attention heads. Default is 4.
-    n_layer : int, optional
-        The number of layers in the model. Default is 4.
-    dropout : float, optional
-        The dropout probability. Default is 0.5.
-    show_fig : bool, optional
-        Whether to display the loss figure. Default is True.
+    train_data & val_data
+    vocab_size & batch_size & block_size
+    max_iters : Maximum number of training iterations. Default is 1000.
+    eval_interval : Interval at which to evaluate the model. Default is 100.
+    learning_rate : Learning rate for the optimizer. Default is 1e-3.
+    eval_iters : Number of iterations for estimating losses. Default is 200.
+    n_embd & n_heads & n_layer : int, optional
+    dropout : Dropout probability. Default is 0.5.
+    show_fig : Whether to display the loss figure. Default is True.
+    patience : Number of consecutive epochs to wait for improvement before early stopping. Default is 5.
 
     Returns
     -------
-    model : nn.Module
-        The trained model.
-    losses : dict
-        A dictionary containing both the estimated losses of the training and evaluation datasets.
+    model : nn.Module, The trained model.
+    losses : dict, Dictionary containing estimated losses of training and evaluation datasets.
     '''
-    ##TODO MLFlow?
     
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'  # not available on Intel and AMD
+    # Initialize variables for early stopping
+    best_val_loss = np.inf
+    counter = 0
+    
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     torch.manual_seed(1337) 
-    print("\n------------\nTraining for: \n{batch_size:",batch_size,"\nblock_size:",block_size,"\ndropout:",
-          dropout,"\neval_interval:",eval_interval,"\nlearning_rate:",learning_rate,
-          "\nmax_iters:",max_iters,"\nn_embd:",n_embd,"\nn_heads:",n_heads,"\nn_layer:",n_layer,"}\n------------\n")
-    
     
     m = AttentionModel(vocab_size=vocab_size, n_layer=n_layer, n_heads=n_heads,
-                           n_embd=n_embd, block_size=block_size, dropout=dropout)
+                       n_embd=n_embd, block_size=block_size, dropout=dropout)
     model = m.to(device)
-    # print the number of parameters in the model
-    print("Model contains",sum(p.numel() for p in model.parameters())/1e6,'milion parameters\n')
     
-    # create a PyTorch optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     
-    loss_list = np.empty((max_iters//eval_interval,2))
+    loss_list = np.empty((max_iters//eval_interval, 2))
     for iter in range(max_iters):
-        # every once in a while evaluate the loss on train and val sets
         if iter % eval_interval == 0 or iter == max_iters - 1:
             losses = estimate_loss(model, eval_iters, block_size, batch_size, train_data, val_data)
-            loss_list[iter//eval_interval,0]=losses['train']
-            loss_list[iter//eval_interval,1]=losses['val']
+            loss_list[iter//eval_interval, 0] = losses['train']
+            loss_list[iter//eval_interval, 1] = losses['val']
             print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+            
+            # Check if validation loss has improved
+            if losses['val'] < best_val_loss:
+                best_val_loss = losses['val']
+                counter = 0  # Reset counter if there's improvement
+            else:
+                counter += 1
+                
+            # Early stopping condition
+            if counter >= patience:
+                ## TODO this can be better right?
+                print(f"Validation loss has not improved for {patience} consecutive iterations. Early stopping...")
+                break
     
-        # sample a batch of data
-        xb, yb = get_batch('train', block_size, batch_size, train_data, val_data, device='cpu')
+        xb, yb = get_batch('train', block_size, batch_size, train_data, val_data, device=device)
     
-        # evaluate the loss
         logits, loss = model(xb, yb)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -161,11 +145,11 @@ def train_model(train_data, val_data, vocab_size, batch_size = 16, block_size = 
 
     if show_fig:
         fig, ax = plt.subplots()
-        ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:,0], label="Training Loss")
-        ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:,1], label="Validation Loss")
+        ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:, 0], label="Training Loss")
+        ax.plot(np.linspace(1, max_iters, max_iters//eval_interval).astype(int), loss_list[:, 1], label="Validation Loss")
         fig.legend()
         ax.set_yscale('log')
-        fig.savefig("loss_value")
+        fig.savefig("Results/loss_value")
     
     return model, losses
 
@@ -173,8 +157,10 @@ def train_model(train_data, val_data, vocab_size, batch_size = 16, block_size = 
 #%% load the data in the dictionary
 if __name__ == "__main__":
         
+    ## TODO implement early stopping
+    
     # Load the list back from the Pickle file
-    with open('Dataset.pickle', 'rb') as f:
+    with open('Dataset/Dataset.pickle', 'rb') as f:
         Dataset = pickle.load(f)
     
     dictionary = Dictionary(sorted(list(set(Dataset))))
@@ -192,7 +178,7 @@ if __name__ == "__main__":
     save_dict(dictionary)
     
     # best params
-    with open('best_hyperparameters.pickle', 'rb') as f:
+    with open('Results/best_hyperparameters.pickle', 'rb') as f:
         best_params = pickle.load(f)
     
     # train model

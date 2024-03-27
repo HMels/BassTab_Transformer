@@ -22,25 +22,22 @@ number_dict = [str(x) for x in range(0, 19)]
 special_dict = ["h", "p", "s", "/", r'"\"', "x", ".","-","^","~","(n)","|", "G", "Gb","D","Db","A","Ab","E","Eb"]
 
 
-def parse_tab_line(line):
+def parse_tab_line(line: str) -> (str, int or None, bool):
     """
     Parses a single line of a tab and returns the notes until the third "|".
     If there are characters after the third "|" sign, it returns them separately as a repeat (the amount of times this bar is repeated).
 
     Parameters
     ----------
-    line : str
-        The tab line to be parsed.
+    line : The tab line to be parsed.
 
     Returns
     -------
-    output : str
-        The notes in the line until the third "|".
-    repeat : int or None
-        The repeat count of the notes after the third "|" sign. If no repeat count is found, returns None.
-    isempty : bool
-        Is true when the complete bassline did not contain any notes
+    output : The notes in the line until the third "|".
+    repeat : The repeat count of the notes after the third "|" sign. If no repeat count is found, returns None.
+    isempty : Is true when the complete bassline did not contain any notes
     """
+    
     # Initialize variables
     output = ""
     pipe_count = 0
@@ -100,7 +97,7 @@ def parse_tab_line(line):
     return output, 1, isempty
 
 
-def load_bassTab(url):
+def load_bassTab(url: str) -> list:
     '''
     Loads a bass tab from a URL and returns an instance of the BassTab class containing the tab data.
     This function is as of right now very clunky and mainly focusses on getting all the tabs into similar 
@@ -108,13 +105,11 @@ def load_bassTab(url):
 
     Parameters
     ----------
-    url : str
-        The URL of the bass tab to be loaded.
+    url : The URL of the bass tab to be loaded.
     
     Returns
     -------
-    bassTab : BassTab
-        An instance of the BassTab class containing the loaded tab data.
+    bassTab : A list containing the loaded tab data in string.
     '''
     bassTab = []
     
@@ -249,14 +244,13 @@ def load_bassTab(url):
 
 
 #%%
-def print_basstab(Data):
+def print_basstab(Data : list):
     '''
     Prints the basstab in readable form
 
     Parameters
     ----------
-    Data : List
-        The input data, which is a list of strings in which each string contains one beat.
+    Data : The input data, which is a list of strings in which each string contains one beat.
 
     '''
     G,D,A,E = '','','',''
