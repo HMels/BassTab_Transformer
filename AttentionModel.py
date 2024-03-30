@@ -7,7 +7,6 @@ Created on Tue Mar 12 13:19:30 2024
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-import math
 
 from layers import MultiHeadAttention, FeedFoward
 
@@ -20,13 +19,16 @@ def load_model():
     return model  
 
 
-#%%    
+#%%
 class PositionalEncoding(nn.Module):
+    '''
+    https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/
+    '''
     def __init__(self, n_embd, block_size):
         super(PositionalEncoding, self).__init__()
         pe = torch.zeros(block_size, n_embd)
         position = torch.arange(0, block_size, dtype=torch.float).unsqueeze(1)
-        div_term = 10000**-(2 * torch.arange(0, int(n_embd/2))/ n_embd)
+        div_term = 10000**-(2 * torch.arange(0, int(n_embd//2))/ n_embd)
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0)
@@ -79,6 +81,7 @@ class AttentionModel(nn.Module):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd)
         self.blocks = nn.Sequential(*[Block(n_heads=n_heads, n_embd=n_embd, 
                                             block_size=block_size, dropout=dropout) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd) # final layer norm
@@ -94,6 +97,7 @@ class AttentionModel(nn.Module):
         # idx and targets are both (B,T) tensor of integers
         tok_emb = self.token_embedding_table(idx) # (B,T,C)
         pos_emb = self.position_encoder(tok_emb)
+        #pos_emb = self.position_embedding_table(torch.arange(T))
         x = tok_emb + pos_emb # (B,T,C)
         x = self.blocks(x) # (B,T,C)
         x = self.ln_f(x) # (B,T,C)

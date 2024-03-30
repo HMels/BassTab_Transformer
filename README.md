@@ -116,5 +116,7 @@ E|--------------------------------|---------------2--7--9-|-3-5---1-0---0--70---
 Things To Do
 
     Make the model more complex to generate better tabs
-	Check if the new pos encoding actually works better than the old one
+	See what has changed in the model that it generates terrible results
+	Add an rcc to make it focus on patterns more
+	Run the hyperopt algorithm better
 

@@ -21,14 +21,14 @@ def objective(params : dict):
     params['n_heads'] = int(params['n_heads'])
     params['n_layer'] = int(params['n_layer'])   
     
-    # Train the model with the current set of hyperparameters
-    model, losses = train_model(train_data, val_data, dictionary.vocab_size, **params, show_fig=False)
-    val_loss = losses['val'].item() if isinstance(losses['val'], torch.Tensor) else losses['val']
+    with mlflow.start_run(): # Log hyperparameters and evaluation results
+        # Train the model with the current set of hyperparameters
+        model, losses = train_model(train_data, val_data, dictionary.vocab_size, **params, show_fig=False)
+        val_loss = losses['val'].item() if isinstance(losses['val'], torch.Tensor) else losses['val']
 
     
-    np.save("temp/train_data_hyperopt.npy", train_data.numpy())
-    np.save("temp/val_data_hyperopt.npy", val_data.numpy())
-    with mlflow.start_run(): # Log hyperparameters and evaluation results
+        np.save("temp/train_data_hyperopt.npy", train_data.numpy())
+        np.save("temp/val_data_hyperopt.npy", val_data.numpy())
         for key, value in params.items():
             mlflow.log_param(key, int(value))
         mlflow.log_params(fixed_params)
