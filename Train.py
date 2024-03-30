@@ -159,7 +159,7 @@ def train_model(train_data, val_data, vocab_size: int, batch_size: int = 16, blo
 if __name__ == "__main__":
         
     fixed_params = {
-        'eval_interval': 500,
+        'eval_interval': 50,
         'max_iters': 500,
         'eval_iters': 200,
         'patience': 5
@@ -199,14 +199,17 @@ if __name__ == "__main__":
     mlflow.set_tracking_uri("http://localhost:5000")
     mlflow.set_experiment("Default")
     
-    # train model
-    model,losses = train_model(train_data, val_data, dictionary.vocab_size, **params)
-    val_loss = losses['val'].item() if isinstance(losses['val'], torch.Tensor) else losses['val']
-    save_model(model)
     
-    np.save("temp/train_data.npy", train_data.numpy())
-    np.save("temp/val_data.npy", val_data.numpy())
     with mlflow.start_run(): # Log hyperparameters and evaluation results
+        # train model
+        model,losses = train_model(train_data, val_data, dictionary.vocab_size, **params, show_fig=True)
+        val_loss = losses['val'].item() if isinstance(losses['val'], torch.Tensor) else losses['val']
+        save_model(model)
+    
+        # save params in mlflow
+        np.save("temp/train_data.npy", train_data.numpy())
+        np.save("temp/val_data.npy", val_data.numpy())
+        
         mlflow.log_params(params)
         mlflow.log_artifact("temp/train_data.npy", artifact_path="data")
         mlflow.log_artifact("temp/val_data.npy", artifact_path="data")
